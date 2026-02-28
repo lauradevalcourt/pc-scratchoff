@@ -147,3 +147,34 @@ body {
     pointer-events: none;
     z-index: 100;
 }
+
+@media (max-width: 768px) {
+        body {
+                    align-items: flex-start;
+                    padding-bottom: 120px;
+        }
+
+    .cards-container {
+                flex-direction: column;
+                align-items: center;
+                padding: 24px 16px;
+    }
+
+    .scratch-card {
+                width: min(324px, calc(100vw - 32px));
+                height: auto;
+                aspect-ratio: 324 / 540;
+    }
+
+    .controls {
+                position: fixed;
+                right: auto;
+                bottom: 16px;
+                top: auto;
+                left: 50%;
+                transform: translateX(-50%);
+                flex-direction: row;
+                width: auto;
+                gap: 12px;
+    }
+}
