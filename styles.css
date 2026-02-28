@@ -161,8 +161,19 @@ body {
     }
 
     .scratch-card {
-                            width: min(324px, calc(100vw - 32px));
-                    height: calc(min(324px, calc(100vw - 32px)) * 540 / 324);
+                width: 100%;
+                max-width: 324px;
+                height: 0;
+                padding-bottom: 166.67%;
+    }
+
+    .scratch-card img {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+    }
 
     .controls {
                 position: fixed;
@@ -170,6 +181,7 @@ body {
                 bottom: 16px;
                 top: auto;
                 left: 50%;
+                -webkit-transform: translateX(-50%);
                 transform: translateX(-50%);
                 flex-direction: row;
                 width: auto;
