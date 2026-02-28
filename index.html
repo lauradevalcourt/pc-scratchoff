@@ -164,21 +164,25 @@
                                                         checkCompletion();
                                     }
 
-                                    function onStart(e) {
-                                                        if (completed) return;
-                                                        e.preventDefault();
-                                                        // Always init/resume audio on touch start — this is the user gesture
-                                                        initAudio();
-                                                        const pos = getPos(e);
-                                                        isScratching = true;
-                                                        lastX = pos.x;
-                                                        lastY = pos.y;
-                                                        if (isOnCircle(pos.x, pos.y)) {
-                                                                                soundActive = true;
-                                                                                startScratchSound();
-                                                        }
-                                                        scratch(pos.x, pos.y);
-                                    }
+async function onStart(e) {
+                        if (completed) return;
+                        e.preventDefault();
+                        // Init AudioContext synchronously (required by iOS for user gesture)
+                        initAudio();
+                        // Wait for AudioContext to actually be running before playing sound
+                        if (audioCtx && audioCtx.state !== 'running') {
+                                                    await audioCtx.resume();
+                        }
+                        const pos = getPos(e);
+                        isScratching = true;
+                        lastX = pos.x;
+                        lastY = pos.y;
+                        if (isOnCircle(pos.x, pos.y)) {
+                                                    soundActive = true;
+                                                    startScratchSound();
+                        }
+                        scratch(pos.x, pos.y);
+}
 
                                     function onMove(e) {
                                                         if (!isScratching) return;
