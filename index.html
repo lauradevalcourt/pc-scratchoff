@@ -1,284 +1,300 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scratch & Win</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
+    <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Scratch & Win</title>
+        <link rel="stylesheet" href="styles.css">
+    </head>
 <body>
-    <canvas id="confetti-canvas"></canvas>
+        <canvas id="confetti-canvas"></canvas>canvas>
 
-    <div class="cards-container">
-        <div class="scratch-card" id="card-pink">
-            <img src="assets/pink-pc-scratchoff@3x.png" alt="Pink Card">
-            <canvas id="canvas-pink"></canvas>
-        </div>
-        <div class="scratch-card" id="card-blue">
-            <img src="assets/blue-pc-scratch@3x.png" alt="Blue Card">
-            <canvas id="canvas-blue"></canvas>
-        </div>
-    </div>
+        <div class="cards-container">
+                    <div class="scratch-card" id="card-pink">
+                                    <img src="assets/pink-pc-scratchoff@3x.png" alt="Pink Card">
+                                    <canvas id="canvas-pink"></canvas>canvas>
+                    </div>div>
+                    <div class="scratch-card" id="card-blue">
+                                    <img src="assets/blue-pc-scratch@3x.png" alt="Blue Card">
+                                    <canvas id="canvas-blue"></canvas>canvas>
+                    </div>div>
+        </div>div>
 
-    <script src="sounds.js"></script>
-    <script>
-        // Scratch card logic
-        function initScratchCard(canvasId) {
-            const canvas = document.getElementById(canvasId);
-            const ctx = canvas.getContext('2d', { willReadFrequently: true });
-            const container = canvas.parentElement;
-            let isScratching = false;
-            let soundActive = false;
-            let lastX, lastY;
-            let completed = false;
-            let checkCounter = 0;
-            let circleCenterX = 0, circleCenterY = 0, circleRadius = 0;
-            let totalOpaquePixels = 0;
-            let canReadPixels = true;
-            let scratchedArea = 0;
-
-            function isOnCircle(x, y) {
-                const dx = x - circleCenterX;
-                const dy = y - circleCenterY;
-                return (dx * dx + dy * dy) <= (circleRadius * circleRadius);
-            }
-
-            function checkCompletion() {
-                if (completed) return;
-                checkCounter++;
-                if (checkCounter % 5 !== 0) return;
-                let scratchedPercent = 0;
-                if (canReadPixels) {
-                    try {
-                        const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-                        let remaining = 0;
-                        for (let i = 3; i < pixels.length; i += 16) {
-                            if (pixels[i] > 0) remaining++;
-                        }
-                        const originalOpaqueSampled = Math.ceil(totalOpaquePixels / 4);
-                        scratchedPercent = 1 - (remaining / originalOpaqueSampled);
-                    } catch (e) {
-                        canReadPixels = false;
+        <script src="sounds.js"></script>
+        <script>
+                    // Unlock AudioContext on the very first touch anywhere on the page.
+                    // iOS Safari requires resume() to be called synchronously inside a
+                    // user-gesture handler. We do it here, as early as possible, before
+                    // any other work (getPos, isOnCircle, scratch, etc.) can run.
+                    function unlockAudio() {
+                                    initAudio();
+                                    document.removeEventListener('touchstart', unlockAudio, true);
                     }
-                }
-                if (!canReadPixels) {
-                    const circleArea = Math.PI * circleRadius * circleRadius;
-                    scratchedPercent = Math.min(1, scratchedArea / (circleArea * 0.9));
-                }
-                if (scratchedPercent > 0.90) {
-                    completed = true;
-                    if (soundActive) {
-                        soundActive = false;
-                        stopScratchSound();
+                    document.addEventListener('touchstart', unlockAudio, true); // capture phase = fires first
+
+                    // Scratch card logic
+                    function initScratchCard(canvasId) {
+                                    const canvas = document.getElementById(canvasId);
+                                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                                    const container = canvas.parentElement;
+                                    let isScratching = false;
+                                    let soundActive = false;
+                                    let lastX, lastY;
+                                    let completed = false;
+                                    let checkCounter = 0;
+                                    let circleCenterX = 0, circleCenterY = 0, circleRadius = 0;
+                                    let totalOpaquePixels = 0;
+                                    let canReadPixels = true;
+                                    let scratchedArea = 0;
+
+                                    function isOnCircle(x, y) {
+                                                        const dx = x - circleCenterX;
+                                                        const dy = y - circleCenterY;
+                                                        return (dx * dx + dy * dy) <= (circleRadius * circleRadius);
+                                    }
+
+                                    function checkCompletion() {
+                                                        if (completed) return;
+                                                        checkCounter++;
+                                                        if (checkCounter % 5 !== 0) return;
+                                                        let scratchedPercent = 0;
+                                                        if (canReadPixels) {
+                                                                                try {
+                                                                                                            const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+                                                                                                            let remaining = 0;
+                                                                                                            for (let i = 3; i < pixels.length; i += 16) {
+                                                                                                                                            if (pixels[i] > 0) remaining++;
+                                                                                                                }
+                                                                                                            const originalOpaqueSampled = Math.ceil(totalOpaquePixels / 4);
+                                                                                                            scratchedPercent = 1 - (remaining / originalOpaqueSampled);
+                                                                                    } catch (e) {
+                                                                                                            canReadPixels = false;
+                                                                                    }
+                                                        }
+                                                        if (!canReadPixels) {
+                                                                                const circleArea = Math.PI * circleRadius * circleRadius;
+                                                                                scratchedPercent = Math.min(1, scratchedArea / (circleArea * 0.9));
+                                                        }
+                                                        if (scratchedPercent > 0.90) {
+                                                                                completed = true;
+                                                                                if (soundActive) {
+                                                                                                            soundActive = false;
+                                                                                                            stopScratchSound();
+                                                                                    }
+                                                                                isScratching = false;
+                                                                                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                                                                                container.classList.add('revealed');
+                                                                                playCompleteSound();
+                                                                                onCardRevealed(container.id);
+                                                        }
+                                    }
+
+                                    const metalImg = new Image();
+                                    metalImg.src = 'assets/scratch-metal@3x.png';
+                                    metalImg.onload = () => {
+                                                        canvas.width = metalImg.width;
+                                                        canvas.height = metalImg.height;
+                                                        ctx.drawImage(metalImg, 0, 0, canvas.width, canvas.height);
+                                                        try {
+                                                                                const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+                                                                                let minX = canvas.width, maxX = 0, minY = canvas.height, maxY = 0;
+                                                                                totalOpaquePixels = 0;
+                                                                                for (let y = 0; y < canvas.height; y++) {
+                                                                                                            for (let x = 0; x < canvas.width; x++) {
+                                                                                                                                            const alpha = pixels[(y * canvas.width + x) * 4 + 3];
+                                                                                                                                            if (alpha > 0) {
+                                                                                                                                                                                totalOpaquePixels++;
+                                                                                                                                                                                if (x < minX) minX = x;
+                                                                                                                                                                                if (x > maxX) maxX = x;
+                                                                                                                                                                                if (y < minY) minY = y;
+                                                                                                                                                                                if (y > maxY) maxY = y;
+                                                                                                                                                }
+                                                                                                                }
+                                                                                    }
+                                                                                circleCenterX = (minX + maxX) / 2;
+                                                                                circleCenterY = (minY + maxY) / 2;
+                                                                                circleRadius = Math.max(maxX - minX, maxY - minY) / 2;
+                                                        } catch (e) {
+                                                                                circleCenterX = canvas.width / 2;
+                                                                                circleCenterY = canvas.height * 0.6;
+                                                                                circleRadius = canvas.width * 0.42;
+                                                                                totalOpaquePixels = Math.PI * circleRadius * circleRadius;
+                                                        }
+                                    };
+
+                                    function getPos(e) {
+                                                        const rect = canvas.getBoundingClientRect();
+                                                        const scaleX = canvas.width / rect.width;
+                                                        const scaleY = canvas.height / rect.height;
+                                                        let clientX, clientY;
+                                                        if (e.touches) {
+                                                                                clientX = e.touches[0].clientX;
+                                                                                clientY = e.touches[0].clientY;
+                                                        } else {
+                                                                                clientX = e.clientX;
+                                                                                clientY = e.clientY;
+                                                        }
+                                                        return {
+                                                                                x: (clientX - rect.left) * scaleX,
+                                                                                y: (clientY - rect.top) * scaleY
+                                                        };
+                                    }
+
+                                    function scratch(x, y) {
+                                                        ctx.globalCompositeOperation = 'destination-out';
+                                                        ctx.beginPath();
+                                                        ctx.arc(x, y, 30, 0, Math.PI * 2);
+                                                        ctx.fill();
+                                                        if (lastX !== undefined) {
+                                                                                ctx.lineWidth = 60;
+                                                                                ctx.lineCap = 'round';
+                                                                                ctx.lineJoin = 'round';
+                                                                                ctx.beginPath();
+                                                                                ctx.moveTo(lastX, lastY);
+                                                                                ctx.lineTo(x, y);
+                                                                                ctx.stroke();
+                                                                                const dx = x - lastX;
+                                                                                const dy = y - lastY;
+                                                                                const dist = Math.sqrt(dx * dx + dy * dy);
+                                                                                scratchedArea += dist * 60;
+                                                        }
+                                                        scratchedArea += Math.PI * 30 * 30;
+                                                        lastX = x;
+                                                        lastY = y;
+                                                        checkCompletion();
+                                    }
+
+                                    function onStart(e) {
+                                                        if (completed) return;
+                                                        e.preventDefault();
+                                                        // Always init/resume audio on touch start — this is the user gesture
+                                                        initAudio();
+                                                        const pos = getPos(e);
+                                                        isScratching = true;
+                                                        lastX = pos.x;
+                                                        lastY = pos.y;
+                                                        if (isOnCircle(pos.x, pos.y)) {
+                                                                                soundActive = true;
+                                                                                startScratchSound();
+                                                        }
+                                                        scratch(pos.x, pos.y);
+                                    }
+
+                                    function onMove(e) {
+                                                        if (!isScratching) return;
+                                                        e.preventDefault();
+                                                        const pos = getPos(e);
+                                                        const onCircle = isOnCircle(pos.x, pos.y);
+                                                        if (onCircle && !soundActive) {
+                                                                                soundActive = true;
+                                                                                startScratchSound();
+                                                        } else if (!onCircle && soundActive) {
+                                                                                soundActive = false;
+                                                                                stopScratchSound();
+                                                        }
+                                                        if (onCircle && lastX !== undefined) {
+                                                                                const dx = pos.x - lastX;
+                                                                                const dy = pos.y - lastY;
+                                                                                const speed = Math.sqrt(dx * dx + dy * dy);
+                                                                                updateScratchSound(speed);
+                                                        }
+                                                        scratch(pos.x, pos.y);
+                                    }
+
+                                    function onEnd() {
+                                                        if (soundActive) {
+                                                                                soundActive = false;
+                                                                                stopScratchSound();
+                                                        }
+                                                        isScratching = false;
+                                                        lastX = undefined;
+                                                        lastY = undefined;
+                                    }
+
+                                    canvas.addEventListener('mousedown', onStart);
+                                    canvas.addEventListener('mousemove', onMove);
+                                    window.addEventListener('mouseup', onEnd);
+                                    canvas.addEventListener('touchstart', onStart, { passive: false });
+                                    canvas.addEventListener('touchmove', onMove, { passive: false });
+                                    window.addEventListener('touchend', onEnd);
                     }
-                    isScratching = false;
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    container.classList.add('revealed');
-                    playCompleteSound();
-                    onCardRevealed(container.id);
-                }
-            }
 
-            const metalImg = new Image();
-            metalImg.src = 'assets/scratch-metal@3x.png';
-            metalImg.onload = () => {
-                canvas.width = metalImg.width;
-                canvas.height = metalImg.height;
-                ctx.drawImage(metalImg, 0, 0, canvas.width, canvas.height);
-                try {
-                    const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-                    let minX = canvas.width, maxX = 0, minY = canvas.height, maxY = 0;
-                    totalOpaquePixels = 0;
-                    for (let y = 0; y < canvas.height; y++) {
-                        for (let x = 0; x < canvas.width; x++) {
-                            const alpha = pixels[(y * canvas.width + x) * 4 + 3];
-                            if (alpha > 0) {
-                                totalOpaquePixels++;
-                                if (x < minX) minX = x;
-                                if (x > maxX) maxX = x;
-                                if (y < minY) minY = y;
-                                if (y > maxY) maxY = y;
-                            }
-                        }
+                    // Card reveal tracking and confetti
+                    const revealedCards = { pink: false, blue: false };
+
+                    function onCardRevealed(cardId) {
+                                    if (cardId === 'card-pink') revealedCards.pink = true;
+                                    if (cardId === 'card-blue') revealedCards.blue = true;
+                                    if (revealedCards.pink && revealedCards.blue) {
+                                                        launchConfetti();
+                                    }
                     }
-                    circleCenterX = (minX + maxX) / 2;
-                    circleCenterY = (minY + maxY) / 2;
-                    circleRadius = Math.max(maxX - minX, maxY - minY) / 2;
-                } catch (e) {
-                    circleCenterX = canvas.width / 2;
-                    circleCenterY = canvas.height * 0.6;
-                    circleRadius = canvas.width * 0.42;
-                    totalOpaquePixels = Math.PI * circleRadius * circleRadius;
-                }
-            };
 
-            function getPos(e) {
-                const rect = canvas.getBoundingClientRect();
-                const scaleX = canvas.width / rect.width;
-                const scaleY = canvas.height / rect.height;
-                let clientX, clientY;
-                if (e.touches) {
-                    clientX = e.touches[0].clientX;
-                    clientY = e.touches[0].clientY;
-                } else {
-                    clientX = e.clientX;
-                    clientY = e.clientY;
-                }
-                return {
-                    x: (clientX - rect.left) * scaleX,
-                    y: (clientY - rect.top) * scaleY
-                };
-            }
-
-            function scratch(x, y) {
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath();
-                ctx.arc(x, y, 30, 0, Math.PI * 2);
-                ctx.fill();
-                if (lastX !== undefined) {
-                    ctx.lineWidth = 60;
-                    ctx.lineCap = 'round';
-                    ctx.lineJoin = 'round';
-                    ctx.beginPath();
-                    ctx.moveTo(lastX, lastY);
-                    ctx.lineTo(x, y);
-                    ctx.stroke();
-                    const dx = x - lastX;
-                    const dy = y - lastY;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    scratchedArea += dist * 60;
-                }
-                scratchedArea += Math.PI * 30 * 30;
-                lastX = x;
-                lastY = y;
-                checkCompletion();
-            }
-
-            function onStart(e) {
-                if (completed) return;
-                e.preventDefault();
-                const pos = getPos(e);
-                isScratching = true;
-                lastX = pos.x;
-                lastY = pos.y;
-                if (isOnCircle(pos.x, pos.y)) {
-                    soundActive = true;
-                    startScratchSound();
-                }
-                scratch(pos.x, pos.y);
-            }
-
-            function onMove(e) {
-                if (!isScratching) return;
-                e.preventDefault();
-                const pos = getPos(e);
-                const onCircle = isOnCircle(pos.x, pos.y);
-                if (onCircle && !soundActive) {
-                    soundActive = true;
-                    startScratchSound();
-                } else if (!onCircle && soundActive) {
-                    soundActive = false;
-                    stopScratchSound();
-                }
-                if (onCircle && lastX !== undefined) {
-                    const dx = pos.x - lastX;
-                    const dy = pos.y - lastY;
-                    const speed = Math.sqrt(dx * dx + dy * dy);
-                    updateScratchSound(speed);
-                }
-                scratch(pos.x, pos.y);
-            }
-
-            function onEnd() {
-                if (soundActive) {
-                    soundActive = false;
-                    stopScratchSound();
-                }
-                isScratching = false;
-                lastX = undefined;
-                lastY = undefined;
-            }
-
-            canvas.addEventListener('mousedown', onStart);
-            canvas.addEventListener('mousemove', onMove);
-            window.addEventListener('mouseup', onEnd);
-            canvas.addEventListener('touchstart', onStart, { passive: false });
-            canvas.addEventListener('touchmove', onMove, { passive: false });
-            window.addEventListener('touchend', onEnd);
-        }
-
-        // Card reveal tracking and confetti
-        const revealedCards = { pink: false, blue: false };
-        function onCardRevealed(cardId) {
-            if (cardId === 'card-pink') revealedCards.pink = true;
-            if (cardId === 'card-blue') revealedCards.blue = true;
-            if (revealedCards.pink && revealedCards.blue) {
-                launchConfetti();
-            }
-        }
-
-        function launchConfetti() {
-            const canvas = document.getElementById('confetti-canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            const colors = ['#ca187c', '#13baed', '#FFD700', '#FF6B6B', '#4ECDC4', '#fff', '#FF69B4', '#00D4FF'];
-            const pieces = [];
-            for (let i = 0; i < 200; i++) {
-                pieces.push({
-                    x: Math.random() * canvas.width,
-                    y: -10 - Math.random() * canvas.height * 0.5,
-                    w: 4 + Math.random() * 8,
-                    h: 6 + Math.random() * 10,
-                    color: colors[Math.floor(Math.random() * colors.length)],
-                    vx: (Math.random() - 0.5) * 4,
-                    vy: 2 + Math.random() * 4,
-                    rotation: Math.random() * Math.PI * 2,
-                    rotationSpeed: (Math.random() - 0.5) * 0.2,
-                    wobble: Math.random() * Math.PI * 2,
-                    wobbleSpeed: 0.03 + Math.random() * 0.05,
-                });
-            }
-            let frame = 0;
-            function animate() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                let alive = false;
-                pieces.forEach(p => {
-                    p.x += p.vx + Math.sin(p.wobble) * 1.5;
-                    p.y += p.vy;
-                    p.rotation += p.rotationSpeed;
-                    p.wobble += p.wobbleSpeed;
-                    p.vy += 0.03;
-                    p.vx *= 0.999;
-                    if (p.y < canvas.height + 20) {
-                        alive = true;
-                        ctx.save();
-                        ctx.translate(p.x, p.y);
-                        ctx.rotate(p.rotation);
-                        ctx.fillStyle = p.color;
-                        ctx.globalAlpha = Math.min(1, (canvas.height - p.y + 200) / 200);
-                        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
-                        ctx.restore();
+                    function launchConfetti() {
+                                    const canvas = document.getElementById('confetti-canvas');
+                                    const ctx = canvas.getContext('2d');
+                                    canvas.width = window.innerWidth;
+                                    canvas.height = window.innerHeight;
+                                    const colors = ['#ca187c', '#13baed', '#FFD700', '#FF6B6B', '#4ECDC4', '#fff', '#FF69B4', '#00D4FF'];
+                                    const pieces = [];
+                                    for (let i = 0; i < 200; i++) {
+                                                        pieces.push({
+                                                                                x: Math.random() * canvas.width,
+                                                                                y: -10 - Math.random() * canvas.height * 0.5,
+                                                                                w: 4 + Math.random() * 8,
+                                                                                h: 6 + Math.random() * 10,
+                                                                                color: colors[Math.floor(Math.random() * colors.length)],
+                                                                                vx: (Math.random() - 0.5) * 4,
+                                                                                vy: 2 + Math.random() * 4,
+                                                                                rotation: Math.random() * Math.PI * 2,
+                                                                                rotationSpeed: (Math.random() - 0.5) * 0.2,
+                                                                                wobble: Math.random() * Math.PI * 2,
+                                                                                wobbleSpeed: 0.03 + Math.random() * 0.05,
+                                                        });
+                                    }
+                                    let frame = 0;
+                                    function animate() {
+                                                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                                                        let alive = false;
+                                                        pieces.forEach(p => {
+                                                                                p.x += p.vx + Math.sin(p.wobble) * 1.5;
+                                                                                p.y += p.vy;
+                                                                                p.rotation += p.rotationSpeed;
+                                                                                p.wobble += p.wobbleSpeed;
+                                                                                p.vy += 0.03;
+                                                                                p.vx *= 0.999;
+                                                                                if (p.y < canvas.height + 20) {
+                                                                                                            alive = true;
+                                                                                                            ctx.save();
+                                                                                                            ctx.translate(p.x, p.y);
+                                                                                                            ctx.rotate(p.rotation);
+                                                                                                            ctx.fillStyle = p.color;
+                                                                                                            ctx.globalAlpha = Math.min(1, (canvas.height - p.y + 200) / 200);
+                                                                                                            ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                                                                                                            ctx.restore();
+                                                                                    }
+                                                        });
+                                                        frame++;
+                                                        if (alive && frame < 400) {
+                                                                                requestAnimationFrame(animate);
+                                                        } else {
+                                                                                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                                                        }
+                                    }
+                                    animate();
+                                    setTimeout(() => {
+                                                        document.querySelectorAll('.scratch-card.revealed').forEach(card => {
+                                                                                card.style.transition = 'box-shadow 0.6s ease-out';
+                                                                                card.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.4)';
+                                                        });
+                                    }, 800);
                     }
-                });
-                frame++;
-                if (alive && frame < 400) {
-                    requestAnimationFrame(animate);
-                } else {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                }
-            }
-            animate();
-            setTimeout(() => {
-                document.querySelectorAll('.scratch-card.revealed').forEach(card => {
-                    card.style.transition = 'box-shadow 0.6s ease-out';
-                    card.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.4)';
-                });
-            }, 800);
-        }
 
-        initScratchCard('canvas-pink');
-        initScratchCard('canvas-blue');
-    </script>
+                    initScratchCard('canvas-pink');
+                    initScratchCard('canvas-blue');
+        </script>
 </body>
-</html>
+</html>html>
+        </script>
+</body></title>
+    </head>
