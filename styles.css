@@ -161,10 +161,8 @@ body {
     }
 
     .scratch-card {
-                width: min(324px, calc(100vw - 32px));
-                height: auto;
-                aspect-ratio: 324 / 540;
-    }
+                            width: min(324px, calc(100vw - 32px));
+                    height: calc(min(324px, calc(100vw - 32px)) * 540 / 324);
 
     .controls {
                 position: fixed;
