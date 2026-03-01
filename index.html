@@ -7,32 +7,26 @@
         <link rel="stylesheet" href="styles.css">
     </head>
 <body>
-        <canvas id="confetti-canvas"></canvas>
-
+        <canvas id="confetti-canvas"></canvas>canvas>
         <div class="cards-container">
                     <div class="scratch-card" id="card-pink">
                                     <img src="assets/pink-pc-scratchoff@3x.png" alt="Pink Card">
-                                    <canvas id="canvas-pink"></canvas>
-                    </div>
+                                    <canvas id="canvas-pink"></canvas>canvas>
+                    </div>div>
                     <div class="scratch-card" id="card-blue">
                                     <img src="assets/blue-pc-scratch@3x.png" alt="Blue Card">
-                                    <canvas id="canvas-blue"></canvas>
-                    </div>
-        </div>
-
+                                    <canvas id="canvas-blue"></canvas>canvas>
+                    </div>div>
+        </div>div>
         <script src="sounds.js"></script>
         <script>
-                    // Unlock AudioContext on the very first touch anywhere on the page.
-                    // iOS Safari requires resume() to be called synchronously inside a
-                    // user-gesture handler. We do it here, as early as possible, before
-                    // any other work (getPos, isOnCircle, scratch, etc.) can run.
+                    // Unlock AudioContext on the very first touch — must be synchronous inside user gesture
                     function unlockAudio() {
                                     initAudio();
                                     document.removeEventListener('touchstart', unlockAudio, true);
                     }
-                    document.addEventListener('touchstart', unlockAudio, true); // capture phase = fires first
+                    document.addEventListener('touchstart', unlockAudio, true);
 
-                    // Scratch card logic
                     function initScratchCard(canvasId) {
                                     const canvas = document.getElementById(canvasId);
                                     const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -77,10 +71,7 @@
                                                         }
                                                         if (scratchedPercent > 0.90) {
                                                                                 completed = true;
-                                                                                if (soundActive) {
-                                                                                                            soundActive = false;
-                                                                                                            stopScratchSound();
-                                                                                    }
+                                                                                if (soundActive) { soundActive = false; stopScratchSound(); }
                                                                                 isScratching = false;
                                                                                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                                                                                 container.classList.add('revealed');
@@ -126,17 +117,10 @@
                                                         const rect = canvas.getBoundingClientRect();
                                                         const scaleX = canvas.width / rect.width;
                                                         const scaleY = canvas.height / rect.height;
-                                                        let clientX, clientY;
-                                                        if (e.touches) {
-                                                                                clientX = e.touches[0].clientX;
-                                                                                clientY = e.touches[0].clientY;
-                                                        } else {
-                                                                                clientX = e.clientX;
-                                                                                clientY = e.clientY;
-                                                        }
+                                                        const touch = e.touches ? e.touches[0] : e;
                                                         return {
-                                                                                x: (clientX - rect.left) * scaleX,
-                                                                                y: (clientY - rect.top) * scaleY
+                                                                                x: (touch.clientX - rect.left) * scaleX,
+                                                                                y: (touch.clientY - rect.top) * scaleY
                                                         };
                                     }
 
@@ -155,8 +139,7 @@
                                                                                 ctx.stroke();
                                                                                 const dx = x - lastX;
                                                                                 const dy = y - lastY;
-                                                                                const dist = Math.sqrt(dx * dx + dy * dy);
-                                                                                scratchedArea += dist * 60;
+                                                                                scratchedArea += Math.sqrt(dx * dx + dy * dy) * 60;
                                                         }
                                                         scratchedArea += Math.PI * 30 * 30;
                                                         lastX = x;
@@ -164,28 +147,25 @@
                                                         checkCompletion();
                                     }
 
-async function onStart(e) {
-                        if (completed) return;
-                        e.preventDefault();
-                        // Init AudioContext synchronously (required by iOS for user gesture)
-                        initAudio();
-                        // Wait for AudioContext to actually be running before playing sound
-                        if (audioCtx && audioCtx.state !== 'running') {
-                                                    await audioCtx.resume();
-                        }
-                        const pos = getPos(e);
-                        isScratching = true;
-                        lastX = pos.x;
-                        lastY = pos.y;
-                        if (isOnCircle(pos.x, pos.y)) {
-                                                    soundActive = true;
-                                                    startScratchSound();
-                        }
-                        scratch(pos.x, pos.y);
-}
+                                    function onStart(e) {
+                                                        if (completed) return;
+                                                        // Init audio synchronously — this IS the user gesture, must not be async
+                                                        initAudio();
+                                                        const pos = getPos(e);
+                                                        // Only prevent default (blocking scroll) if touch is on the scratch circle
+                                                        if (isOnCircle(pos.x, pos.y)) {
+                                                                                e.preventDefault();
+                                                                                isScratching = true;
+                                                                                lastX = pos.x;
+                                                                                lastY = pos.y;
+                                                                                soundActive = true;
+                                                                                startScratchSound();
+                                                                                scratch(pos.x, pos.y);
+                                                        }
+                                    }
 
                                     function onMove(e) {
-                                                        if (!isScratching) return;
+                                                        if (!isScratching || completed) return;
                                                         e.preventDefault();
                                                         const pos = getPos(e);
                                                         const onCircle = isOnCircle(pos.x, pos.y);
@@ -199,17 +179,13 @@ async function onStart(e) {
                                                         if (onCircle && lastX !== undefined) {
                                                                                 const dx = pos.x - lastX;
                                                                                 const dy = pos.y - lastY;
-                                                                                const speed = Math.sqrt(dx * dx + dy * dy);
-                                                                                updateScratchSound(speed);
+                                                                                updateScratchSound(Math.sqrt(dx * dx + dy * dy));
                                                         }
                                                         scratch(pos.x, pos.y);
                                     }
 
                                     function onEnd() {
-                                                        if (soundActive) {
-                                                                                soundActive = false;
-                                                                                stopScratchSound();
-                                                        }
+                                                        if (soundActive) { soundActive = false; stopScratchSound(); }
                                                         isScratching = false;
                                                         lastX = undefined;
                                                         lastY = undefined;
@@ -218,20 +194,18 @@ async function onStart(e) {
                                     canvas.addEventListener('mousedown', onStart);
                                     canvas.addEventListener('mousemove', onMove);
                                     window.addEventListener('mouseup', onEnd);
-                                    canvas.addEventListener('touchstart', onStart, { passive: false });
+                                    // touchstart passive:true so scroll is NOT blocked by default;
+                                    // preventDefault is called selectively inside onStart only when on the circle
+                                    canvas.addEventListener('touchstart', onStart, { passive: true });
                                     canvas.addEventListener('touchmove', onMove, { passive: false });
                                     window.addEventListener('touchend', onEnd);
                     }
 
-                    // Card reveal tracking and confetti
                     const revealedCards = { pink: false, blue: false };
-
                     function onCardRevealed(cardId) {
                                     if (cardId === 'card-pink') revealedCards.pink = true;
                                     if (cardId === 'card-blue') revealedCards.blue = true;
-                                    if (revealedCards.pink && revealedCards.blue) {
-                                                        launchConfetti();
-                                    }
+                                    if (revealedCards.pink && revealedCards.blue) launchConfetti();
                     }
 
                     function launchConfetti() {
@@ -289,7 +263,7 @@ async function onStart(e) {
                                     setTimeout(() => {
                                                         document.querySelectorAll('.scratch-card.revealed').forEach(card => {
                                                                                 card.style.transition = 'box-shadow 0.6s ease-out';
-                                                                                card.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.4)';
+                                                                                card.style.boxShadow = '0 8px 32px rgba(0,0,0,0.4)';
                                                         });
                                     }, 800);
                     }
@@ -298,4 +272,7 @@ async function onStart(e) {
                     initScratchCard('canvas-blue');
         </script>
 </body>
-</html>
+</html>html>
+        </script>
+</body></title>
+    </head>
