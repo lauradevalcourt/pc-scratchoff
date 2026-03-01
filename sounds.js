@@ -168,6 +168,7 @@ let audioCtx = null;
 let noiseBuffer = null;
 let activeNodes = null;
 let activeScratchCount = 0;
+let scratchGeneration = 0;
 
 function initAudio() {
         if (!audioCtx) {
@@ -188,7 +189,10 @@ function initAudio() {
 }
 
 function startScratchSound() {
-        initAudio().then(() => {            activeScratchCount++;
+        const gen = ++scratchGeneration;
+        initAudio().then(() => {
+            if (gen !== scratchGeneration) return;
+            activeScratchCount++;
             if (activeScratchCount > 1) return;
             const p = soundProfiles[currentSound];
             const source = audioCtx.createBufferSource();
@@ -228,6 +232,7 @@ function updateScratchSound(speed) {
 }
 
 function stopScratchSound() {
+        scratchGeneration++;
         activeScratchCount = Math.max(0, activeScratchCount - 1);
         if (activeScratchCount > 0) return;
         if (activeNodes) {
