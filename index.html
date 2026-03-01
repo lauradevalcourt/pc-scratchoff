@@ -196,7 +196,7 @@
                                     window.addEventListener('mouseup', onEnd);
                                     // touchstart passive:true so scroll is NOT blocked by default;
                                     // preventDefault is called selectively inside onStart only when on the circle
-                                    canvas.addEventListener('touchstart', onStart, { passive: true });
+                                    canvas.addEventListener('touchstart', onStart, { passive: false });
                                     canvas.addEventListener('touchmove', onMove, { passive: false });
                                     window.addEventListener('touchend', onEnd);
                     }
