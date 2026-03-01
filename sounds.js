@@ -179,43 +179,44 @@ function initAudio() {
                                     data[i] = Math.random() * 2 - 1;
                     }
         }
-        // Mobile browsers suspend AudioContext until resumed inside a user gesture
-    if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-    }
+        // iOS Safari suspends AudioContext until resumed inside a user gesture.
+        // Return the promise so callers can wait until the context is actually running.
+        if (audioCtx.state === 'suspended') {
+                return audioCtx.resume();
+        }
+        return Promise.resolve();
 }
 
 function startScratchSound() {
-        initAudio();
-        activeScratchCount++;
-        if (activeScratchCount > 1) return;
-        const p = soundProfiles[currentSound];
-        const source = audioCtx.createBufferSource();
-        source.buffer = noiseBuffer;
-        source.loop = true;
-        const bandpass = audioCtx.createBiquadFilter();
-        bandpass.type = 'bandpass';
-        bandpass.frequency.value = p.bandpassFreq;
-        bandpass.Q.value = p.bandpassQ;
-        const highpass = audioCtx.createBiquadFilter();
-        highpass.type = 'highpass';
-        highpass.frequency.value = p.highpassFreq;
-        const gain = audioCtx.createGain();
-        gain.gain.value = p.baseVol;
-        let chain = [bandpass, highpass];
-        if (p.extraFilters) {
-                    chain = chain.concat(p.extraFilters(audioCtx));
-        }
-        chain.push(gain);
-        source.connect(chain[0]);
-        for (let i = 0; i < chain.length - 1; i++) {
-                    chain[i].connect(chain[i + 1]);
-        }
-        gain.connect(audioCtx.destination);
-        source.start();
-        activeNodes = { source, gain, filter: bandpass, profile: p };
+        initAudio().then(() => {            activeScratchCount++;
+            if (activeScratchCount > 1) return;
+            const p = soundProfiles[currentSound];
+            const source = audioCtx.createBufferSource();
+            source.buffer = noiseBuffer;
+            source.loop = true;
+            const bandpass = audioCtx.createBiquadFilter();
+            bandpass.type = 'bandpass';
+            bandpass.frequency.value = p.bandpassFreq;
+            bandpass.Q.value = p.bandpassQ;
+            const highpass = audioCtx.createBiquadFilter();
+            highpass.type = 'highpass';
+            highpass.frequency.value = p.highpassFreq;
+            const gain = audioCtx.createGain();
+            gain.gain.value = p.baseVol;
+            let chain = [bandpass, highpass];
+            if (p.extraFilters) {
+                        chain = chain.concat(p.extraFilters(audioCtx));
+            }
+            chain.push(gain);
+            source.connect(chain[0]);
+            for (let i = 0; i < chain.length - 1; i++) {
+                        chain[i].connect(chain[i + 1]);
+            }
+            gain.connect(audioCtx.destination);
+            source.start();
+            activeNodes = { source, gain, filter: bandpass, profile: p };
+    });
 }
-
 function updateScratchSound(speed) {
         if (!activeNodes) return;
         const { filter, gain, profile: p } = activeNodes;
@@ -337,6 +338,8 @@ const completeSounds = {
 };
 
 function playCompleteSound() {
-        initAudio();
-        completeSounds[currentComplete]();
+        initAudio().then(() => {
+                completeSounds[currentComplete]();
+        });
 }
+
