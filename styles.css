@@ -151,28 +151,21 @@ body {
 @media (max-width: 768px) {
         body {
                     align-items: flex-start;
-                    padding-bottom: 120px;
+                    padding-bottom: 40px;
         }
 
     .cards-container {
                 flex-direction: column;
                 align-items: center;
                 padding: 24px 16px;
+                width: 100%;
     }
 
     .scratch-card {
-                width: 100%;
+                width: calc(100vw - 32px);
                 max-width: 324px;
-                height: 0;
-                padding-bottom: 166.67%;
-    }
-
-    .scratch-card img {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
+                height: calc((100vw - 32px) * 1.6667);
+                max-height: 540px;
     }
 
     .controls {
